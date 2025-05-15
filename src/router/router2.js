@@ -20,6 +20,8 @@ import { LoginLoadingComponent } from "../component/loadingcomponent/LoginLoadin
 import { MasterPage } from "../pages/MasterPage.js";
 
 import { GeneralProductMainPage } from "../pages/GeneralProductMainPage.js";
+import { EventSaleProductMainPage } from "../pages/EventSaleProductMainPage.js";
+
 
 import { CartPage } from "../pages/CartPage.js";
 
@@ -248,6 +250,12 @@ function StartRouter2() {
                 path="/gproduct/:product_num/:onedayclass_num"
                 element={<GeneralProductMainPage></GeneralProductMainPage>}
               ></Route>
+
+              <Route
+                path="/eproduct/:eventproduct_num"
+                element={< EventSaleProductMainPage></ EventSaleProductMainPage>}
+              ></Route>
+             
               <Route path="/myCartPage" element={<CartPage></CartPage>}></Route>
 
               {/* 주의: 현재 id는 0 1 2 만 있음  또한 해당 컴포넌트의 useParam훅을 보아라 반드시 

@@ -559,6 +559,10 @@ module.exports.getBannerTypeListModel = async (req, res) => {
         currentServerDate,
         uc_bannertype,
       ]);
+      //배너가 만기된경우
+      if (excutequery[0][0] === undefined) {
+        continue;
+      }
 
       BannerTypeArr.push(excutequery[0][0]);
     }
@@ -607,8 +611,16 @@ module.exports.getBannerTypeProductListModel = async (req, res) => {
         currentServerDate,
         uc_bannertype,
       ]);
+      // 배너 사용일이 끝난경우
+      if (excutequery[0][0] === undefined) {
+        continue;
+      }
 
       let FindA100TypeOnedayclass_num = excutequery[0][0].onedayclass_num;
+
+      console.log(
+        `FindA100TypeOnedayclass_num:  ${FindA100TypeOnedayclass_num}`
+      );
 
       // console.log(
       //   `컨펌이 떨어지며 A100 인 원데이클래스 번호: ${FindA100TypeOnedayclass_num}`
@@ -1779,8 +1791,6 @@ module.exports.writingreviewModel = async (req, res) => {
     review_image,
     image_name,
   } = req.body;
-
-
 
   let sql =
     "insert into review (review_comment,user_id,onedayclass_num,review_name,review_image,image_name)  values(?,?,?,?,?,?)";

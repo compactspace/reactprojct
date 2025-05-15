@@ -54,6 +54,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+   "start:server": "nodemon backendsrc/server/reactserver.js",
     "ipv4": "HOST=192.168.0.51 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -79,5 +80,8 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://api.odcloud.kr"
+  "proxy": "http://api.odcloud.kr",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
 }

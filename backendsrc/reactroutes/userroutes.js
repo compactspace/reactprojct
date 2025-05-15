@@ -5,17 +5,13 @@ const jwt = require("jsonwebtoken");
 const requestIp = require("request-ip");
 const redis = require("redis");
 const coolsms = require("coolsms-node-sdk").default;
+
+const client = require("../redisClient/redisClient");
+
 const messageService = new coolsms(
   "NCSY4BTX5OIPQLWB",
   "MUKUA17KEOWARC69L8WJRTJ5VY3RWWKA"
 );
-
-const client = redis.createClient({ port: 6379, password: "1111" });
-//귀찮으니 여기서 redis에 한번 저장 하고
-const redisconnect = async (req, res, next) => {
-  const check = await client.connect();
-  next();
-};
 
 require("dotenv").config();
 
@@ -48,6 +44,7 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
+  console.log("로그인 컴포넌트 시도!!..");
   await usercontrller.login(req, res);
 });
 
@@ -213,63 +210,63 @@ router.post("/insertPaymnetInfo", async (req, res) => {
   res.json(resultobj);
 });
 
-router.post("/redisproductpayment", async (req, res) => {
-  await usercontrller.redisproductpayment(req, res);
-});
+// router.post("/redisproductpayment", async (req, res) => {
+//   await usercontrller.redisproductpayment(req, res);
+// });
 
-router.post("/showcartlist", redisconnect, async (req, res) => {
-  let { userid } = req.body;
+// router.post("/showcartlist", redisconnect, async (req, res) => {
+//   let { userid } = req.body;
 
-  let 장바구니리스트 = await client.hGetAll(`${userid}`);
+//   let 장바구니리스트 = await client.hGetAll(`${userid}`);
 
-  console.log("장바구니리스트::     ", 장바구니리스트 == null);
+//   console.log("장바구니리스트::     ", 장바구니리스트 == null);
 
-  let obj = new Object();
-  if (장바구니리스트 == null || 장바구니리스트 == undefined) {
-    //장바구니가 비어 있어요
-    obj.cartStatusCode = -1;
-    res.json(obj);
-    return;
-  }
+//   let obj = new Object();
+//   if (장바구니리스트 == null || 장바구니리스트 == undefined) {
+//     //장바구니가 비어 있어요
+//     obj.cartStatusCode = -1;
+//     res.json(obj);
+//     return;
+//   }
 
-  let 상품정보배열객체 = new Array();
+//   let 상품정보배열객체 = new Array();
 
-  for (let Feild in 장바구니리스트) {
-    //console.log("Feild:  ",Feild, " value :",새로담는유저인지확인[Feild] )
+//   for (let Feild in 장바구니리스트) {
+//     //console.log("Feild:  ",Feild, " value :",새로담는유저인지확인[Feild] )
 
-    상품정보배열객체.push(
-      JSON.parse(JSON.stringify(await client.hGetAll(Feild)))
-    );
-  }
+//     상품정보배열객체.push(
+//       JSON.parse(JSON.stringify(await client.hGetAll(Feild)))
+//     );
+//   }
 
-  await client.disconnect();
+//   await client.disconnect();
 
-  obj.cartStatusCode = 1;
-  obj.proList = 상품정보배열객체;
-  console.log(상품정보배열객체);
+//   obj.cartStatusCode = 1;
+//   obj.proList = 상품정보배열객체;
+//   console.log(상품정보배열객체);
 
-  res.json(obj);
-});
+//   res.json(obj);
+// });
 
-router.post("/delpro", redisconnect, async (req, res) => {
-  let { userid, proCode } = req.body;
+// router.post("/delpro", redisconnect, async (req, res) => {
+//   let { userid, proCode } = req.body;
 
-  console.log("userid:  ", userid, " proCode:  ", proCode);
+//   console.log("userid:  ", userid, " proCode:  ", proCode);
 
-  let obj = new Object();
-  try {
-    await client.hDel(`${userid}`, `pro${proCode}`);
+//   let obj = new Object();
+//   try {
+//     await client.hDel(`${userid}`, `pro${proCode}`);
 
-    await client.hIncrBy(`pro${proCode}`, "proQuantity", 1);
+//     await client.hIncrBy(`pro${proCode}`, "proQuantity", 1);
 
-    obj.delStatusCode = 1;
-  } catch (err) {
-    obj.delStatusCode = -1;
-  } finally {
-    await client.disconnect();
-    res.json(obj);
-  }
-});
+//     obj.delStatusCode = 1;
+//   } catch (err) {
+//     obj.delStatusCode = -1;
+//   } finally {
+//     await client.disconnect();
+//     res.json(obj);
+//   }
+// });
 
 //다른 메서드 만드는 중으로 주석처리
 // router.get("/reservedmodal", async(req,res)=>{
@@ -338,6 +335,26 @@ router.post("/checkreceipt", async (req, res) => {
 //리뷰를 작성하는 컨트롤러
 router.post("/writingreview", async (req, res) => {
   await usercontrller.writingreview(req, res);
+});
+
+//레디스 활용 특가 상품 상품정보 리턴
+router.post("/getEventSaleProductOne", async (req, res) => {
+  await usercontrller.getEventSaleProductOne(req, res, client);
+});
+
+//레디스 활용 특가 상품 담기
+router.post("/addEventProductCart", async (req, res) => {
+  await usercontrller.addEventProductCart(req, res, client);
+});
+
+//장바구니에 담은 레디스 활용특가 상품 가져오기
+router.get("/addEventProductCart", async (req, res) => {
+  await usercontrller.getEventProductCart(req, res, client);
+});
+
+//장바구니에 담은 레디스 활용특가 상품 삭제
+router.post("/delteEventProductCart", async (req, res) => {
+  await usercontrller.delteEventProductCart(req, res, client);
 });
 
 module.exports = router;

@@ -30,7 +30,6 @@ export const JustRegisteredOneDayClass = () => {
   let data = { onedayclass_num: id };
   let detailinfoarr;
   useEffect(() => {
-    
     axios
       .post(
         `http://${IP}:4000/noneuser/justregisterOneDayClasspage`,
@@ -52,6 +51,7 @@ export const JustRegisteredOneDayClass = () => {
         let imgList = new Array();
         for (let i = 0; i < imglist.length; i++) {
           let buffer = new Buffer.from(imglist[i].reserve_img);
+          console.log(buffer.toString());
           imgList.push(buffer.toString());
         }
 

@@ -7,6 +7,17 @@ import { GeneralModal } from "../component/pages/Master/MasterMenuCompo/MasterBu
 const CartPageAllWrapper = styled.div`
   display: flex;
   flex-direction: column;
+
+  & .btnTogle {
+    color: #fff;
+    background-color: #2389ff;
+    min-width: 150px;
+    text-align: center;
+    font-size: 19px;
+    line-height: 70px;
+    border-radius: 20px 20px 20px 20px;
+  }
+
   img {
     display: block;
     max-height: 200px;
@@ -138,6 +149,21 @@ export const CartPage = () => {
   const [paygoModal, setPaygoModal] = useState(false);
 
   const [deleteTriger, setDeleteTriger] = useState(0);
+
+  const [일반상품또는이벤트상품카트토글, set일반상품또는이벤트상품카트토글] =
+    useState("generalProduct");
+
+  const [이벤트상품카트, set이벤트상품카트] = useState(null);
+  const [이벤트상품카트cnt, set이벤트상품카트cnt] = useState(0);
+
+  useEffect(() => {
+    axios.get(`http://${IP}:4000/user/addEventProductCart`).then((res) => {
+      const { myEventProductCartCnt, myEventProductCartList } = res.data;
+
+      set이벤트상품카트(myEventProductCartList);
+      set이벤트상품카트cnt(myEventProductCartCnt);
+    });
+  }, []);
 
   useEffect(() => {
     axios.get(`http://${IP}:4000/user/myCartList`).then((res) => {
@@ -359,29 +385,133 @@ export const CartPage = () => {
   return (
     <>
       <CartPageAllWrapper>
-        <div className="cartArea">
-          {카트가가지고있던수량 != undefined &&
-            카트담았던시점상품정보 != undefined &&
-            가격보정상품정보 != undefined &&
-            카트담았던시점상품정보.map((item, idx) => {
-              console.log(idx);
-              console.log(가격보정상품정보[idx]);
+        <div className="rowBox">
+          <div
+            className="cartTogle btnTogle"
+            onClick={() => {
+              set일반상품또는이벤트상품카트토글("generalProduct");
+            }}
+          >
+            카트내역
+          </div>
+          <h2>/</h2>
+          <div
+            className="salecartTogle btnTogle"
+            onClick={() => {
+              set일반상품또는이벤트상품카트토글("eventProduct");
+            }}
+          >
+            이벤트상품카트내역
+          </div>
+        </div>
 
-              return (
-                <div key={item.uc_product_num} className="productInfoArea">
-                  <div className="rowBox">
-                    <div className="productImage">
-                      <img
-                        src={카트담았던시점상품정보[idx].uc_product_mainImage}
-                      />
-                    </div>
-                    <div className="colBox" style={{ gap: "20px" }}>
-                      <div className="rowBox">
-                        <div style={labelName}>상품명:</div>
-                        <div style={labelTarget}>{item.uc_product_name}</div>
+        {일반상품또는이벤트상품카트토글 === "eventProduct" &&
+          이벤트상품카트cnt > 0 && (
+            <div className="cartArea">
+              {이벤트상품카트.map((item, idx) => {
+                return (
+                  <div key={item.proCode} className="productInfoArea">
+                    <div className="rowBox">
+                      <div className="productImage">
+                        <img src={`/${item.imageUrl}`} />
                       </div>
+                      <div className="colBox" style={{ gap: "20px" }}>
+                        <div className="rowBox">
+                          <div style={labelName}>상품명:</div>
+                          <div style={labelTarget}>{item.proName}</div>
+                        </div>
 
-                      {/* <div className="rowBox">
+                        <div className="rowBox">
+                          <div style={labelName}> 가격:</div>
+                          <div style={labelTarget}> {item.proPrice}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="colBox btnArea">
+                      <div className="quantity rowBox">
+                        <div
+                          className="minus"
+                          onClick={(e) => {
+                            alert("특가 상품은 한제품당 한개 입니다.");
+                          }}
+                        >
+                          <div className="NbtnCss minus">-</div>
+                        </div>
+                        <div>수량: 1</div>
+                        <div
+                          className="plus"
+                          onClick={(e) => {
+                            alert("특가 상품은 한제품당 한개 입니다.");
+                          }}
+                        >
+                          <div className="YbtnCss plus">+</div>
+                        </div>
+                      </div>
+                      <div className="quantityPrice">수량대비가격</div>
+
+                      <div
+                        className="rowBox"
+                        style={{ justifyContent: "space-between" }}
+                      >
+                        <div className="eachPurchace" onClick={() => {}}>
+                          구매
+                        </div>
+                        <div
+                          className="eachDelete"
+                          onClick={async () => {
+                            let bodyData = { proCode: item.proCode };
+
+                            await axios.post(
+                              `http://${IP}:4000/user/delteEventProductCart`,
+                              { bodyData }
+                            );
+                          }}
+                        >
+                          삭제
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {카트담았던시점상품정보 != undefined &&
+                카트담았던시점상품정보.length != 0 && (
+                  <div
+                    className="rowBox"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    <div className="YbtnCss">전체구매</div>
+                    <div className="NbtnCss">비우기</div>
+                  </div>
+                )}
+            </div>
+          )}
+        {일반상품또는이벤트상품카트토글 === "generalProduct" && (
+          <div className="cartArea">
+            {카트가가지고있던수량 != undefined &&
+              카트담았던시점상품정보 != undefined &&
+              가격보정상품정보 != undefined &&
+              카트담았던시점상품정보.map((item, idx) => {
+                console.log(idx);
+                console.log(가격보정상품정보[idx]);
+
+                return (
+                  <div key={item.uc_product_num} className="productInfoArea">
+                    <div className="rowBox">
+                      <div className="productImage">
+                        <img
+                          src={카트담았던시점상품정보[idx].uc_product_mainImage}
+                        />
+                      </div>
+                      <div className="colBox" style={{ gap: "20px" }}>
+                        <div className="rowBox">
+                          <div style={labelName}>상품명:</div>
+                          <div style={labelTarget}>{item.uc_product_name}</div>
+                        </div>
+
+                        {/* <div className="rowBox">
                         <div style={labelName}>변경전 가격:</div>
                         <div style={labelTarget}>
                           {" "}
@@ -396,105 +526,106 @@ export const CartPage = () => {
                         </div>
                       </div> */}
 
-                      {카트담았던시점상품정보[idx].uc_product_name ===
-                        가격보정상품정보[idx].uc_product_name &&
-                      카트담았던시점상품정보[idx].uc_product_price !=
-                        가격보정상품정보[idx].uc_product_price ? (
-                        <>
-                          <div className="rowBox">
-                            <div style={labelName}>변경전 가격:</div>
-                            <div style={labelTarget}>
-                              {" "}
-                              {카트담았던시점상품정보[idx].uc_product_price}
+                        {카트담았던시점상품정보[idx].uc_product_name ===
+                          가격보정상품정보[idx].uc_product_name &&
+                        카트담았던시점상품정보[idx].uc_product_price !=
+                          가격보정상품정보[idx].uc_product_price ? (
+                          <>
+                            <div className="rowBox">
+                              <div style={labelName}>변경전 가격:</div>
+                              <div style={labelTarget}>
+                                {" "}
+                                {카트담았던시점상품정보[idx].uc_product_price}
+                              </div>
                             </div>
-                          </div>
-                          <div className="rowBox">
-                            <div style={labelName}> 변경후 가격:</div>
-                            <div style={labelTarget}>
-                              {" "}
-                              {가격보정상품정보[idx].uc_product_price}
+                            <div className="rowBox">
+                              <div style={labelName}> 변경후 가격:</div>
+                              <div style={labelTarget}>
+                                {" "}
+                                {가격보정상품정보[idx].uc_product_price}
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="rowBox">
-                            <div style={labelName}> 가격:</div>
-                            <div style={labelTarget}>
-                              {" "}
-                              {가격보정상품정보[idx].uc_product_price}
+                          </>
+                        ) : (
+                          <>
+                            <div className="rowBox">
+                              <div style={labelName}> 가격:</div>
+                              <div style={labelTarget}>
+                                {" "}
+                                {가격보정상품정보[idx].uc_product_price}
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="colBox btnArea">
+                      <div className="quantity rowBox">
+                        <div
+                          className="minus"
+                          onClick={(e) => {
+                            quantityHandler(e, idx);
+                          }}
+                        >
+                          <div className="NbtnCss minus">-</div>
+                        </div>
+                        <div>수량: {payparamInfo[idx].quantity}</div>
+                        <div
+                          className="plus"
+                          onClick={(e) => {
+                            quantityHandler(e, idx);
+                          }}
+                        >
+                          <div className="YbtnCss plus">+</div>
+                        </div>
+                      </div>
+                      <div className="quantityPrice">
+                        수량대비가격:{payparamInfo[idx].cart_target_price}
+                      </div>
+
+                      <div
+                        className="rowBox"
+                        style={{ justifyContent: "space-between" }}
+                      >
+                        <div
+                          className="eachPurchace"
+                          onClick={() => {
+                            eachPurchaceFnc(idx);
+                          }}
+                        >
+                          구매
+                        </div>
+                        <div
+                          className="eachDelete"
+                          onClick={() => {
+                            eachDeleteFnc(카트가가지고있던수량[idx]);
+                          }}
+                        >
+                          삭제
+                        </div>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
 
-                  <div className="colBox btnArea">
-                    <div className="quantity rowBox">
-                      <div
-                        className="minus"
-                        onClick={(e) => {
-                          quantityHandler(e, idx);
-                        }}
-                      >
-                        <div className="NbtnCss minus">-</div>
-                      </div>
-                      <div>수량: {payparamInfo[idx].quantity}</div>
-                      <div
-                        className="plus"
-                        onClick={(e) => {
-                          quantityHandler(e, idx);
-                        }}
-                      >
-                        <div className="YbtnCss plus">+</div>
-                      </div>
-                    </div>
-                    <div className="quantityPrice">
-                      수량대비가격:{payparamInfo[idx].cart_target_price}
-                    </div>
-
-                    <div
-                      className="rowBox"
-                      style={{ justifyContent: "space-between" }}
-                    >
-                      <div
-                        className="eachPurchace"
-                        onClick={() => {
-                          eachPurchaceFnc(idx);
-                        }}
-                      >
-                        구매
-                      </div>
-                      <div
-                        className="eachDelete"
-                        onClick={() => {
-                          eachDeleteFnc(카트가가지고있던수량[idx]);
-                        }}
-                      >
-                        삭제
-                      </div>
-                    </div>
+            {카트담았던시점상품정보 != undefined &&
+              카트담았던시점상품정보.length != 0 && (
+                <div
+                  className="rowBox"
+                  style={{ justifyContent: "space-between" }}
+                >
+                  <div className="YbtnCss" onClick={allPurchaceFnc}>
+                    전체구매
+                  </div>
+                  <div className="NbtnCss" onClick={allDelereCartFnc}>
+                    비우기
                   </div>
                 </div>
-              );
-            })}
-
-          {카트담았던시점상품정보 != undefined &&
-            카트담았던시점상품정보.length != 0 && (
-              <div
-                className="rowBox"
-                style={{ justifyContent: "space-between" }}
-              >
-                <div className="YbtnCss" onClick={allPurchaceFnc}>
-                  전체구매
-                </div>
-                <div className="NbtnCss" onClick={allDelereCartFnc}>
-                  비우기
-                </div>
-              </div>
-            )}
-        </div>
+              )}
+          </div>
+        )}
       </CartPageAllWrapper>
       {paygoModal && (
         <>

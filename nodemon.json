@@ -1,0 +1,5 @@
+{
+  "watch": ["backendsrc"],
+  "ext": "js,json",
+  "exec": "node  backendsrc/server/reactserver.js"
+}

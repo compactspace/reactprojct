@@ -34,53 +34,10 @@ require("dotenv").config();
 let secret = process.env.secret;
 // console.log(secret)
 const app = express();
-// app.set("port", 4000); // 포트 설정
-// app.set("host","192.168.0.52"); // 아이피 설정
+
 const server = http.createServer(app);
 
-const client = redis.createClient({ port: 6379, password: "1111" });
-
-//상품은 이런 hset 의 형식으로 저장한다.
-
-// proCode 0 1 2 3 4
-// proName
-// proPrice
-
-//레디스에서 치면 ㅈㄴ 귀찮으니 여기서 잡고 간다.
-
-let product = {
-  pro0: {
-    proCode: 0,
-    proName: "고급잔",
-    proPrice: 3000,
-    proQuantity: 10,
-  },
-  pro1: {
-    proCode: 1,
-    proName: "키링세트",
-    proPrice: 3000,
-    proQuantity: 10,
-  },
-
-  pro2: {
-    proCode: 2,
-    proName: "수제연필키트",
-    proPrice: 3000,
-    proQuantity: 10,
-  },
-  pro3: {
-    proCode: 3,
-    proName: "수제핸드메이드잔",
-    proPrice: 3000,
-    proQuantity: 10,
-  },
-};
-
-//귀찮으니 여기서 redis에 한번 저장 하고
-const redisconnect = async (req, res, next) => {
-  const check = await client.connect();
-  next();
-};
+const client = require("../../backendsrc/redisClient/redisClient");
 
 //주의:
 app.use(mairiasession.mariasession);
@@ -92,10 +49,6 @@ app.use(cookieParser());
 app.use(bodyParser.json({ limit: "50mb" })); // for parsing application/json
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true })); // for parsing application/x-www-form-urlencoded
 
-// 또이놈은 리엑트의 포트 3000 을 허용해주겠다는거임 에휴 씨발
-//https://velog.io/@diorjj/React-CORS-%EC%97%90%EB%9F%AC-%ED%95%B4%EA%B2%B0%ED%95%98%EA%B8%B0
-//위 사이트가 그나마 cors 오리진 해결책준다...
-// app.use(cors({ origin: ['http://localhost:4000/testlogin','https://calm-shortbread-d2aa50.netlify.app','http://calm-shortbread-d2aa50.netlify.app'], credentials: true }));
 app.use(
   cors({
     origin: [
@@ -104,6 +57,7 @@ app.use(
       `http://222.121.127.89:3000`,
       `http://172.30.1.17:3000`,
       `http://localhost:8000`,
+      `http://localhost:3001`,
       `http://localhost:3000`,
       "http://calm-shortbread-d2aa50.netlify.app",
       "https://calm-shortbread-d2aa50.netlify.app/testlogin2",
@@ -242,54 +196,50 @@ app.use("/getthefuckimg", async (req, res) => {
   }
 });
 
-app.get("/redisSalePro", redisconnect, async (req, res) => {
+app.get("/redisSalePro", async (req, res) => {
   let 객체배열 = new Array();
+
+  let 리액트로주는JSON = {};
   for (let i = 0; i < 4; i++) {
     obj = await client.hGetAll(`pro${i}`);
     객체배열.push(obj);
   }
 
-  await client.disconnect();
-  console.log(JSON.stringify(객체배열));
-  res.json(JSON.stringify(객체배열));
+  리액트로주는JSON.redisPorductList = 객체배열;
+  리액트로주는JSON.redisPorductCnt = 객체배열.length;
+
+  res.json(리액트로주는JSON);
 });
 
-app.get("/redisSalegetProinfo", redisconnect, async (req, res) => {
-  let { proCode } = req.query;
-  console.log("proCode:  ", proCode);
+// app.get("/redisSalegetProinfo", redisconnect, async (req, res) => {
+//   let { proCode } = req.query;
+//   console.log("proCode:  ", proCode);
 
-  let 상품정보 = await client.hGetAll(`pro${proCode}`);
+//   let 상품정보 = await client.hGetAll(`pro${proCode}`);
 
-  await client.disconnect();
-  console.log(JSON.stringify(상품정보));
-  res.json(JSON.stringify(상품정보));
-});
+//   await client.disconnect();
+//   console.log(JSON.stringify(상품정보));
+//   res.json(JSON.stringify(상품정보));
+// });
 
 //레디스테스트
-app.use("/redistest", async (req, res) => {
-  sleep(1000);
-  console.log(
-    `연결 시도전 : client.isOpen: ${client.isOpen}, client.isReady: ${client.isReady}`
-  );
-  if (client.isOpen && client.isReady) {
-    await client.disconnect();
-  } else {
-    await client.connect();
-    console.log(
-      `연결 시도후 : client.isOpen: ${client.isOpen}, client.isReady: ${client.isReady}`
-    );
-    await client.disconnect();
-  }
-  //  console.log(`연결 종료후 :client.isOpen: ${client.isOpen}, client.isReady: ${client.isReady}`);
-  res.json({ 키: "" });
-});
-
-//레디스테스트2
-app.use("/redistest2", async (req, res) => {
-  console.log("하");
-
-  res.json({ 키: "" });
-});
+// app.use("/redistest", async (req, res) => {
+//   sleep(1000);
+//   console.log(
+//     `연결 시도전 : client.isOpen: ${client.isOpen}, client.isReady: ${client.isReady}`
+//   );
+//   if (client.isOpen && client.isReady) {
+//     await client.disconnect();
+//   } else {
+//     await client.connect();
+//     console.log(
+//       `연결 시도후 : client.isOpen: ${client.isOpen}, client.isReady: ${client.isReady}`
+//     );
+//     await client.disconnect();
+//   }
+//   //  console.log(`연결 종료후 :client.isOpen: ${client.isOpen}, client.isReady: ${client.isReady}`);
+//   res.json({ 키: "" });
+// });
 
 function sleep(ms) {
   const wakeUpTime = Date.now() + ms;
@@ -302,136 +252,7 @@ function sleep(ms) {
 //     "proQuantity": 10
 // }
 
-//json응답 헤더 확인
-app.get("/jsontest", async (req, res) => {
-  await axios
-    .get("https://jsonplaceholder.typicode.com/photos")
-    .then((res) => {
-      console.log(res);
-      //  res.type('text/plain')
-      console.log("--------------key 시작--------------");
-      const headers = Object.entries(res.headers).map(
-        ([key, value]) => `${key}: ${value}`
-      );
-
-      console.log(headers);
-      console.log("--------------key 종료--------------");
-      // res.send(headers.join('\n'))
-    })
-    .catch((err) => {});
-
-  res.json({ k1: "v1" });
-});
-
-//자바 소켓서버와 통신
-app.use("/what", async (req, res) => {
-  const data = JSON.stringify({
-    data: "hello",
-  });
-
-  //     const options = {
-  //         method: 'GET',
-  //         headers: {
-  //             'Content-Type': 'application/json;charset=utf-8',
-  //             'Content-Length':Buffer.byteLength(data),
-  //             "Authorization": "Bearer ax123",
-  //             'apns-push-type': 'background',
-  //             'connection': 'keep-alive'
-  //         }
-  //     }
-
-  // console.log("Buffer.byteLength(data):  ,",Buffer.byteLength(data))
-
-  //     const reqQuest = http.request("http://localhost:8000/test", options, (res)=>{
-  //         console.log("--응답---");
-  //         console.log(res)
-  //         console.log("--응답 종료---");
-  //      });
-
-  //      reqQuest.on('error', (e) => {
-  //         console.error(e);
-  //     });
-
-  //      try{
-  //         reqQuest.end(data);
-  //      }catch(err){
-  //         console.log("--에러---");
-  //         console.log(err)
-  //         console.log("--에러 종료---");
-
-  //      }
-
-  // res.type('text/plain')
-  // const headersx = Object.entries(req.headers)
-  //     .map(([key, value]) => `${key}: ${value}`)
-
-  //     console.log(headersx)
-
-  //     res.send(headers.join('\n'))
-
-  // console.log("------------------------------------------------------------------------")
-
-  //주의 서버단에서 Bearer ax123 이렇게 공백 스페이스바를 무조건 한번 넣고 보내야함
-  let headers = {
-    "Content-Type": "application/json",
-    "Content-Length": 100,
-    Authorization: "Bearer ax123",
-  };
-
-  //
-  await axios
-    .post(
-      "http://localhost:8000/memberInfo?id=won123",
-
-      data,
-      { headers }
-    )
-    .then((res) => {
-      console.log(res);
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-
-  //     const data = { 'bar': 123 };
-  //    await axios.post('http://localhost:8000/test', JSON.stringify(data),
-  //     {headers , responseType:'json'},
-
-  //     ).then((res)=>{
-
-  //          console.log(res)
-  //         //  res.type('text/plain')
-  //         // const headers = Object.entries(res.headers)
-  //         //     .map(([key, value]) => `${key}: ${value}`)
-
-  //         //     console.log(headers)
-
-  //             // res.send(headers.join('\n'))
-
-  //       })
-  //       .catch((err)=>{
-
-  //         console.log(err)
-
-  //         console.log("------------------------")
-  //         for(let key in err){
-  //             console.log("key:  ",key , " value:   ",err[key])
-  //         }
-  //         console.log("------------------------")
-
-  //         // const headers = Object.entries(err.headers)
-  //         // .map(([key, value]) => `${key}: ${value}`)
-
-  //         // console.log(headers)
-
-  //       })
-
-  //       res.json({"k1":"v1"})
-
-  // console.log(x)
-});
-
-app.post("/redisSaleAddCartProinfo", redisconnect, async (req, res) => {
+app.post("/redisSaleAddCartProinfo", async (req, res) => {
   let { userid, redisproductcode } = req.body;
   console.log("userid:  ", userid, " redisproductcode:  ", redisproductcode);
   //상품 자체에 락을건다.
@@ -439,7 +260,6 @@ app.post("/redisSaleAddCartProinfo", redisconnect, async (req, res) => {
 
   let 레디스수량 = await client.hGet(`pro${redisproductcode}`, "proQuantity");
 
-  //console.log("레디스수량:  ", 레디스수량)
   let obj = new Object();
 
   if (레디스수량 == 0) {
@@ -614,8 +434,6 @@ app.use("/getToken", (req, res) => {
     });
 });
 
-
-
 app.use("/authuser", (req, res) => {
   // console.log("authuser 매핑 확인");
   // console.log(req.headers)
@@ -650,8 +468,6 @@ app.use("/authuser", (req, res) => {
   }
 });
 
-
-
 //리액트 JWTex02 파일과 연동되는 문법용임
 //그냥 토큰 값 그리고 필요한 유저의 아디디를 따로 저장 해서 보내는거임 그이상 그이하도 아님
 app.use("/jwt", (req, res) => {
@@ -669,22 +485,54 @@ app.use("/jwt", (req, res) => {
 //여기서 서버가 요청을 허용할 ip의 디펄트값이 "0.0.0.0" 이고
 // 정확히 구체적으로 명시하면? 그외 아이피는 차단이 된다.!
 
-//레디스 계속 데이터 집어넣기 귀찮으니 서버 초기화시 여기서 집어 넣는다.
+//상품은 이런 hset 의 형식으로 저장한다.
+
+// proCode 0 1 2 3 4
+// proName
+// proPrice
+let product = {
+  pro0: {
+    proCode: 0,
+    proName: "고급잔",
+    proPrice: 3000,
+    proQuantity: 10,
+    imageUrl: "redisSaleImage/sale1.jpg",
+  },
+  pro1: {
+    proCode: 1,
+    proName: "수제 포장지",
+    proPrice: 3000,
+    proQuantity: 10,
+    imageUrl: "redisSaleImage/sale2.jpg",
+  },
+
+  pro2: {
+    proCode: 2,
+    proName: "심신안정 화분",
+    proPrice: 3000,
+    proQuantity: 10,
+    imageUrl: "redisSaleImage/sale3.jpg",
+  },
+  pro3: {
+    proCode: 3,
+    proName: "친환경 수제 향수",
+    proPrice: 3000,
+    proQuantity: 10,
+    imageUrl: "redisSaleImage/sale4.jpg",
+  },
+};
+
 app.listen(4000, async (req, res) => {
-  console.log(`그냥 http서버 시작`);
-  console.log(`호스트 ${process.env.HOST}`);
   await client.connect();
   let i = 0;
   for (let key in product) {
     // console.log(product[key])
     // console.log(`pro${i}`)
-
     await client.hSet(`pro${i}`, product[key]);
     i++;
   }
 
   i = 0;
-  await client.disconnect();
 });
 
 //websoket 서버 = 서버가 능동적으로 요청이 없어도 클라이언트에게 응답을 할 수 있는 서버

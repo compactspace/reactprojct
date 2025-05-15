@@ -323,9 +323,18 @@ export const MainBody = (props) => {
 
   let [방금등록된클래스, set방금등록된클래스] = useState(null);
   let [레디스특가상품리스트, set레디스특가상품리스트] = useState(null);
+  let [레디스특가상품갯수, set레디스특가상품갯수] = useState(0);
+
   let [productList, setProductList] = useState(null);
   let [productCnt, setProductCnt] = useState(0);
   useEffect(() => {
+    axios.get(`http://${IP}:4000/redisSalePro`).then((res) => {
+      const { redisPorductList, redisPorductCnt } = res.data;
+      set레디스특가상품리스트(redisPorductList);
+
+      set레디스특가상품갯수(redisPorductCnt);
+    });
+
     axios
       .post(`http://${IP}:4000/user/getBannerTypeList`, {
         uc_bannertype: "A100",
@@ -394,6 +403,50 @@ export const MainBody = (props) => {
             </div>
           </div>
         </MainBro1>
+        {레디스특가상품갯수 > 0 && (
+          <MainBro2 match={props.match}>
+            <div>
+              <h2 style={{ color: "#797979" }}>
+                오늘 뭐할까가 추천하는 반짝 특가 상품
+              </h2>
+            </div>
+            <div className="classlist">
+              <Swiper className="FirstBodyrow3siper" spaceBetween={`${check}`}>
+                {레디스특가상품리스트.map((obj, index) => (
+                  <SwiperSlide Slide className="swiper-slide">
+                    <a
+                      key={obj.proCode}
+                      className="swiper-slide-link"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navi(`/eproduct/${obj.proCode}`);
+                      }}
+                    >
+                      <div
+                        className="list"
+                        style={{ backgroundImage: `url(${obj.imageUrl})` }}
+                      ></div>
+                      <div className="listinfo">
+                        <div className="infocontent">[{obj.proName}]</div>
+                        <div className="infotitle" style={{ color: "#ff5862" }}>
+                          [한정상품]
+                        </div>
+                        <div className="infoprice">
+                          <span className="discount">{"10%"}~</span>
+                          <span className="cost">[{obj.proPrice}]원</span>
+                          <span className="discountcost">
+                            [ 남은수량 ]{obj.proQuantity}
+                          </span>
+                        </div>
+                      </div>
+                    </a>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          </MainBro2>
+        )}
+
         <MainBro2 match={props.match}>
           <div>
             <h2>참여자들이 검증한 최신 인기 클래스</h2>
@@ -597,9 +650,10 @@ export const MainBody = (props) => {
                       <div
                         className="list"
                         style={{
-                          backgroundImage: `url(${obj.product_mainImage.toString()})`,
+                          backgroundImage: `url(${obj.product_mainImage})`,
                         }}
                       ></div>
+
                       <div className="listinfo">
                         {/* <div class="infocontent">원데이클래스</div> */}
                         <div className="infotitle">{obj.product_name}</div>

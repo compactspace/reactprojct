@@ -3,8 +3,7 @@ const userservice = require("../reactservice/userservice");
 const importUtile = require("../reactUtile/importutile");
 const ExpresSsession = require("express-session");
 const requestIp = require("request-ip");
-const fs = require('fs'); // 꼭 선언했지?
-
+const fs = require("fs"); // 꼭 선언했지?
 
 module.exports.NaverLogin = async (accesscode, req, res) => {
   //      console.log("컨트롤러 매핑 성공~")
@@ -69,10 +68,11 @@ module.exports.login = async (req, res) => {
     const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
     const logMessage = `[${new Date().toISOString()}] Failed login from ${ip}\n`;
     try {
-      const logPath = 'C:/serverfiles/logs/auth.log';  // 윈도우 경로 확인 후 
+      const logPath = "C:/serverfiles/logs/auth.log"; // 윈도우 경로 확인 후
       fs.appendFileSync(
         logPath,
-        "FuckYouFuckYouFuckYouFuckYouFuckYouFuckYouFuckYouFuckYouFuckYou" + logMessage
+        "FuckYouFuckYouFuckYouFuckYouFuckYouFuckYouFuckYouFuckYouFuckYou" +
+          logMessage
       );
       console.log("로그 기록 성공!!");
       return res.status(401).json({ statuscode: -1 });
@@ -80,11 +80,6 @@ module.exports.login = async (req, res) => {
       console.error("로그 기록 실패!! 에러 내용:", err.message);
       return res.status(500).json({ statuscode: -2 });
     }
-
-
-
-
-
 
     res.json(리액트로주는응답제이슨);
     return;
@@ -201,18 +196,14 @@ module.exports.getBannerTypeProductList = async (req, res) => {
   return await userservice.getBannerTypeProductListService(req, res);
 };
 
-
-
-
-
-module.exports.getSelectOneBannerTypeProduct= async (req, res) => {
+module.exports.getSelectOneBannerTypeProduct = async (req, res) => {
   return await userservice.getSelectOneBannerTypeProductService(req, res);
 };
 
-module.exports.insertFirstAddCart= async (req, res) => {
+module.exports.insertFirstAddCart = async (req, res) => {
   return await userservice.insertFirstAddCartService(req, res);
 };
-module.exports.insertPaymnetInfo= async (req, res) => {
+module.exports.insertPaymnetInfo = async (req, res) => {
   return await userservice.insertPaymnetInfoService(req, res);
 };
 
@@ -305,33 +296,29 @@ module.exports.mypage = async (req, res) => {
   res.json(obj);
 };
 
-
-module.exports.myCartList= async (req, res) => {
+module.exports.myCartList = async (req, res) => {
   let obj = await userservice.myCartListService(req, res);
 
   res.json(obj);
 };
 
-module.exports.eachCartDelete= async (req, res) => {
+module.exports.eachCartDelete = async (req, res) => {
   let obj = await userservice.eachCartDeleteService(req, res);
 
   res.json(obj);
 };
 
-
-module.exports.allCartDelete =async (req, res) => {
+module.exports.allCartDelete = async (req, res) => {
   let obj = await userservice.allCartDeleteService(req, res);
 
   res.json(obj);
 };
 
-module.exports.myreceipt =async (req, res) => {
+module.exports.myreceipt = async (req, res) => {
   let obj = await userservice.myreceiptService(req, res);
 
   res.json(obj);
 };
-
-
 
 module.exports.reserveMypage = async (req, res) => {
   let obj = await userservice.reserveMypage(req, res);
@@ -350,3 +337,182 @@ module.exports.writingreview = async (req, res) => {
 
   res.json(obj);
 };
+module.exports.getEventSaleProductOne = async (req, res, client) => {
+  let 리액트로주는JSON = {};
+  let { proCode } = req.body;
+  obj = await client.hGetAll(`pro${proCode}`);
+
+  리액트로주는JSON.redisPorductIfno = obj;
+  res.json(리액트로주는JSON);
+};
+
+module.exports.getEventProductCart = async (req, res, client) => {
+  let userid = req.session.userid;
+  let 리액트로주는JSON = {};
+
+  let 임시배열 = [];
+  const qty = await client.hGetAll(`${userid}`);
+
+  for (let i = 0; i < Object.keys(qty).length; i++) {
+    console.log(Object.keys(qty));
+
+    let proCode = Object.keys(qty)[i];
+
+    임시배열.push(await myEventProductCart(client, proCode));
+  }
+
+  리액트로주는JSON.myEventProductCartCnt = 임시배열.length;
+  리액트로주는JSON.myEventProductCartList = 임시배열;
+  res.json(리액트로주는JSON);
+};
+
+const myEventProductCart = async (client, proCode) => {
+  return await client.hGetAll(`${proCode}`);
+};
+
+// 장바구니 큐 + 프록시 설정
+let eventArr = [];
+
+let handler = {
+  set(target, prop, value) {
+    if (!isNaN(prop)) {
+      scheduleEventExecution(value);
+    }
+    return Reflect.set(target, prop, value);
+  },
+};
+let proxiedArray = new Proxy(eventArr, handler);
+
+// 📦 장바구니 담기
+module.exports.addEventProductCart = async (req, res, client) => {
+  const userid = req.session.userid;
+  const { proCode } = req.body;
+
+  const eventKey = `${userid}_ADD_${proCode}_${Date.now()}`;
+
+  // 👇 Promise로 트랜잭션 결과 기다림
+  const result = await new Promise((resolve) => {
+    proxiedArray.push({
+      eventKey,
+      eventAction: () => tryAddProduct(client, proCode, userid),
+      resolve,
+    });
+  });
+
+  res.json({ addStatusCode: result }); // 0, 1, -1 등 정확한 코드 전달
+};
+
+module.exports.deleteEventProductCart = async (req, res, client) => {
+  const userid = req.session.userid;
+  const { proCode } = req.body;
+
+  const eventKey = `${userid}_DEL_${proCode}_${Date.now()}`;
+
+  // 👇 Promise로 큐 결과 기다림
+  const result = await new Promise((resolve) => {
+    proxiedArray.push({
+      eventKey,
+      eventAction: () => tryDeleteProduct(client, proCode, userid),
+      resolve,
+    });
+  });
+
+  res.json({ deleteStatusCode: result });
+};
+
+// 트랜잭션 처리 - 담기
+const tryAddProduct = async (client, proCode, userid) => {
+  await client.watch(`pro${proCode}`);
+
+  const existing = await client.hGet(`${userid}`, `pro${proCode}`);
+  if (existing !== null) {
+    await client.unwatch();
+    return "already-added";
+  }
+
+  const qty = await client.hGet(`pro${proCode}`, "proQuantity");
+  if (qty === null || parseInt(qty) <= 0) {
+    await client.unwatch();
+    return "no-stock";
+  }
+
+  const tx = client.multi();
+  tx.hSet(
+    `${userid}`,
+    `pro${proCode}`,
+    JSON.stringify({ addedAt: Date.now() })
+  );
+  tx.hIncrBy(`pro${proCode}`, "proQuantity", -1);
+
+  const execResult = await tx.exec();
+  return execResult === null ? null : "success";
+};
+
+// 트랜잭션 처리 - 삭제
+const tryDeleteProduct = async (client, proCode, userid) => {
+  await client.watch(`pro${proCode}`);
+
+  const exists = await client.hGet(`${userid}`, `pro${proCode}`);
+  if (exists === null) {
+    await client.unwatch();
+    return "not-in-cart"; // 유저 장바구니에 없음
+  }
+
+  const tx = client.multi();
+  tx.hDel(`${userid}`, `pro${proCode}`);
+  tx.hIncrBy(`pro${proCode}`, "proQuantity", 1);
+
+  const execResult = await tx.exec();
+  return execResult === null ? null : "success";
+};
+
+// 큐 실행 + 재시도 로직
+async function scheduleEventExecution(eventItem, retry = 0) {
+  const { eventKey, eventAction, resolve } = eventItem;
+
+  try {
+    const result = await eventAction();
+
+    if (
+      ["success", "already-added", "no-stock", "not-in-cart"].includes(result)
+    ) {
+      const index = eventArr.findIndex((e) => e.eventKey === eventKey);
+      if (index !== -1) eventArr.splice(index, 1);
+
+      if (resolve) {
+        // 응답 코드 매핑
+        switch (result) {
+          case "success":
+            resolve(1);
+            break;
+          case "already-added":
+            resolve(0);
+            break;
+          case "no-stock":
+            resolve(-2);
+            break;
+          case "not-in-cart":
+            resolve(0);
+            break;
+        }
+      }
+    } else {
+      if (retry < 3) {
+        setTimeout(() => {
+          scheduleEventExecution(eventItem, retry + 1);
+        }, 100);
+      } else {
+        if (resolve) resolve(-1); // 트랜잭션 실패
+      }
+    }
+  } catch (error) {
+    console.error(`실행 중 에러: ${error.message}`);
+    if (retry < 3) {
+      setTimeout(() => {
+        scheduleEventExecution(eventItem, retry + 1);
+      }, 100);
+    } else {
+      if (resolve) resolve(-9); // 예외
+    }
+  }
+}
